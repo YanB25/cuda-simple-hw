@@ -20,7 +20,7 @@ __global__ void multiple(float* matrix, float* vector, float* out) {
     for (int i = x * 100; i < (x + 1) * 100; ++i) {
         sum += matrix[INDEX(y, i)] * vector[i];
     }
-    out[y + blk * 20] = sum;
+    atomicAdd(&out[y + blk * 20], sum);
 }
 int main() {
     float* hA = (float*) malloc(sizeof(float) * SIZE * SIZE);
@@ -61,4 +61,14 @@ int main() {
     }
     free(hout);
     cudaFree(out);
+}
+
+void validator(float* matrix, float* vector, float* out) {
+    for (int i = 0; i < SIZE; ++i) {
+        float sum = 0;
+        for (int j = 0; j < SIZE; ++j) {
+            sum += matrix[INDEX(i, j)] * vector[j];
+        }
+        out[i] = sum;
+    }
 }
