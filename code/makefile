@@ -1,4 +1,4 @@
 CC=nvcc
-FLAGS=-Wall -W 
+FLAGS=
 helloworld.out: helloworld.cu
 	${CC} -o $@ ${CCFLAGS} $<
