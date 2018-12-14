@@ -1,3 +1,4 @@
+all: helloworld.out matrix-vector.out
 CC=nvcc
 FLAGS=
 helloworld.out: helloworld.cu
