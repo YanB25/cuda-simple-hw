@@ -4,6 +4,8 @@
 
 #define DEBUG
 
+#define float double
+
 #define INDEX(fst, snd, n) ((fst) * (n) + (snd))
 #define SIZE (5000)
 #define TILL (100)
