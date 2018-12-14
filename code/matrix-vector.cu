@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define DEBUG
+
+#define float double
+
 #define INDEX(fst, snd, n) ((fst) * (n) + (snd))
 #define SIZE (5000)
 #define TILL (100)
@@ -18,10 +22,22 @@ __global__ void multiple(float* matrix, float* vector, float* out) {
     int blk = blockIdx.x;
     float sum = 0;
     for (int i = x * 100; i < (x + 1) * 100; ++i) {
-        sum += matrix[INDEX(y, i)] * vector[i];
+        sum += matrix[INDEX(y + blk * 20, i, SIZE)] * vector[i];
     }
-    atomicAdd(&out[y + blk * 20], sum);
+    atomicAdd(&out[y + blk * 20], (float)sum);
 }
+
+void validator(float* matrix, float* vector, float* out) {
+    for (int i = 0; i < SIZE; ++i) {
+        float sum = 0;
+        for (int j = 0; j < SIZE; ++j) {
+            sum += matrix[INDEX(i, j, SIZE)] * vector[j];
+        }
+        out[i] = sum;
+    }
+}
+
+
 int main() {
     float* hA = (float*) malloc(sizeof(float) * SIZE * SIZE);
     float* dA;
@@ -31,24 +47,27 @@ int main() {
     cudaMalloc((void**) &dx, sizeof(float) * SIZE * SIZE);
     float* out;
     cudaMalloc((void**) &out, sizeof(float) * SIZE);
+    float* valout = (float*) malloc(sizeof(float)  * SIZE);
 
     // init hA and hx
     for (int i = 0; i < SIZE; ++i) {
         for (int j = 0; j < SIZE; ++j) {
-            hA[INDEX(i, j)] = i - 0.1 * j + 1;
+            hA[INDEX(i, j, SIZE)] = i - 0.1 * j + 1;
         }
         hx[i] = 0.2 * i - 0.1 * sqrt(i);
     }
 
     // init out
     cudaMemset(out, 0, sizeof(float)* SIZE);
+    memset(valout, 0, sizeof(float) * SIZE);
 
     // transfer to gpu
     cudaMemcpy(dA, hA, sizeof(float) * SIZE * SIZE, cudaMemcpyHostToDevice);
     cudaMemcpy(dx, hx, sizeof(float) * SIZE, cudaMemcpyHostToDevice);
 
     dim3 threads(50, 20);
-    multiple<<<250, threads>>>();
+    multiple<<<250, threads>>>(dA, dx, out);
+    validator(hA, hx, valout);
 
     free(hA);
     free(hx);
@@ -56,19 +75,11 @@ int main() {
     cudaFree(dx);
     float* hout = (float*) malloc(sizeof(float) * SIZE);
     cudaMemcpy(hout, out, sizeof(float)* SIZE, cudaMemcpyDeviceToHost);
-    for (int i = 0; i < 100; ++i) {
-        printf("%f\n", hout[i]);
+    for (int i = 0; i < 10; ++i) {
+        printf("%f, (%f) \n", hout[i], valout[i]);
     }
+    free(valout);
     free(hout);
     cudaFree(out);
 }
 
-void validator(float* matrix, float* vector, float* out) {
-    for (int i = 0; i < SIZE; ++i) {
-        float sum = 0;
-        for (int j = 0; j < SIZE; ++j) {
-            sum += matrix[INDEX(i, j)] * vector[j];
-        }
-        out[i] = sum;
-    }
-}

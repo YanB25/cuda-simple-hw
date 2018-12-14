@@ -1,6 +1,7 @@
+all: helloworld.out matrix-vector.out
 CC=nvcc
-FLAGS=
+FLAGS=-arch=compute_60
 helloworld.out: helloworld.cu
-	${CC} -o $@ ${CCFLAGS} $<
+	${CC} ${FLAGS} -o $@ ${CCFLAGS} $<
 matrix-vector.out: matrix-vector.cu
-	${CC} -o $@ ${CCFLAGS} $<
+	${CC} ${FLAGS} -o $@ ${CCFLAGS} $<
